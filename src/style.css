@@ -72,6 +72,7 @@ h2 {
   padding: 14px;
   background: #f3f3f3;
   text-align: left;
+  gap: 8px;
 }
 
 .day {
@@ -82,9 +83,18 @@ h2 {
   color: #374151;
 }
 
+.time-input-pair {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 100%;
+}
+
 .time-input-wrap {
   display: flex;
   justify-content: flex-end;
+  flex: 1;
 }
 
 .time-input {
@@ -96,6 +106,17 @@ h2 {
   color: #111827;
   font: inherit;
   padding: 8px 10px;
+  text-align: center;
+}
+
+.time-input-small {
+  max-width: 100px;
+}
+
+.time-range-separator {
+  color: #374151;
+  font-weight: 700;
+  min-width: 12px;
   text-align: center;
 }
 

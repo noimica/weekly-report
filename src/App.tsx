@@ -3,6 +3,7 @@ import './style.css';
 
 type WorkRecord = {
   date: string;
+  startTime: string;
   leavingTime: string;
 };
 
@@ -21,6 +22,7 @@ type ReportSettings = {
 
 const STORAGE_KEY = 'weekly-report-records';
 const STORAGE_KEY_SETTINGS = 'weekly-report-settings';
+const DEFAULT_START_TIME = '09:00';
 const DEFAULT_TEMPLATE = '{{date}}({{day}})：{{time}}';
 
 function getMonday(date: Date): Date {
@@ -64,7 +66,13 @@ function loadRecords(): WorkRecord[] {
   }
 
   try {
-    return JSON.parse(value);
+    const parsed = JSON.parse(value) as Partial<WorkRecord>[];
+
+    return parsed.map((record) => ({
+      date: record.date ?? '',
+      startTime: record.startTime ?? DEFAULT_START_TIME,
+      leavingTime: record.leavingTime ?? '',
+    }));
   } catch {
     return [];
   }
@@ -176,28 +184,33 @@ function App() {
     localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
   }, [settings]);
 
-  function saveLeavingTime(date: string, leavingTime: string) {
-    if (!leavingTime) {
-      setRecords((currentRecords) =>
-        currentRecords.filter((record) => record.date !== date),
-      );
-      return;
-    }
-
+  function saveStartTime(date: string, startTime: string) {
     setRecords((currentRecords) => {
-      const existing = currentRecords.some(
-        (record) => record.date === date,
-      );
+      const existing = currentRecords.find((record) => record.date === date);
 
-      if (existing) {
-        return currentRecords.map((record) =>
-          record.date === date
-            ? { ...record, leavingTime }
-            : record,
-        );
-      }
+      return [
+        ...currentRecords.filter((record) => record.date !== date),
+        {
+          date,
+          startTime,
+          leavingTime: existing?.leavingTime ?? '',
+        },
+      ];
+    });
+  }
 
-      return [...currentRecords, { date, leavingTime }];
+  function saveLeavingTime(date: string, leavingTime: string) {
+    setRecords((currentRecords) => {
+      const existing = currentRecords.find((record) => record.date === date);
+
+      return [
+        ...currentRecords.filter((record) => record.date !== date),
+        {
+          date,
+          startTime: existing?.startTime ?? DEFAULT_START_TIME,
+          leavingTime,
+        },
+      ];
     });
   }
 
@@ -211,6 +224,7 @@ function App() {
       hour12: false,
     });
 
+    saveStartTime(date, DEFAULT_START_TIME);
     saveLeavingTime(date, leavingTime);
   }
 
@@ -222,13 +236,18 @@ function App() {
       );
 
       const dateEmptyText = settings.perDateEmptyText?.[dateString] ?? settings.emptyText;
+      const hasStartTime = Boolean(record?.startTime);
+      const hasLeavingTime = Boolean(record?.leavingTime);
+
+      const timeText =
+        record && hasStartTime && hasLeavingTime
+          ? `${formatTimeForDisplay(record.startTime, settings.timeFormat)}~${formatTimeForDisplay(record.leavingTime, settings.timeFormat)}`
+          : dateEmptyText;
 
       const values = {
         date: formatDateForDisplay(date, settings.dateFormat, dayNames[index]),
         day: dayNames[index],
-        time: record
-          ? formatTimeForDisplay(record.leavingTime, settings.timeFormat)
-          : dateEmptyText,
+        time: timeText,
       };
 
       return applyTemplate(settings.template, values);
@@ -273,18 +292,33 @@ function App() {
 
                 <span className="date">{formatDisplayDate(date)}</span>
 
-                <label className="time-input-wrap">
-                  <span className="sr-only">退勤時間</span>
-                  <input
-                    aria-label="退勤時間"
-                    type="time"
-                    className="time-input"
-                    value={record?.leavingTime ?? ''}
-                    onChange={(event) =>
-                      saveLeavingTime(dateString, event.target.value)
-                    }
-                  />
-                </label>
+                <div className="time-input-pair">
+                  <label className="time-input-wrap">
+                    <span className="sr-only">開始時間</span>
+                    <input
+                      aria-label="開始時間"
+                      type="time"
+                      className="time-input time-input-small"
+                      value={record?.startTime ?? DEFAULT_START_TIME}
+                      onChange={(event) =>
+                        saveStartTime(dateString, event.target.value)
+                      }
+                    />
+                  </label>
+                  <span className="time-range-separator">〜</span>
+                  <label className="time-input-wrap">
+                    <span className="sr-only">退勤時間</span>
+                    <input
+                      aria-label="退勤時間"
+                      type="time"
+                      className="time-input time-input-small"
+                      value={record?.leavingTime ?? ''}
+                      onChange={(event) =>
+                        saveLeavingTime(dateString, event.target.value)
+                      }
+                    />
+                  </label>
+                </div>
               </div>
             );
           })}
