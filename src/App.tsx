@@ -165,6 +165,8 @@ function applyTemplate(template: string, values: Record<string, string>): string
 function App() {
   const [records, setRecords] = useState<WorkRecord[]>(loadRecords);
   const [settings, setSettings] = useState<ReportSettings>(loadSettings);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [openDayMap, setOpenDayMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
@@ -289,148 +291,177 @@ function App() {
         </div>
       </section>
 
-      <section className="card settings-card">
-        <h2>週報テンプレート設定</h2>
+      <button
+        type="button"
+        className="secondary-button settings-open-button"
+        onClick={() => setIsSettingsOpen(true)}
+      >
+        週報テンプレート設定を開く
+      </button>
 
-        <label className="field">
-          <span>日付の表示</span>
-          <select
-            value={settings.dateFormat}
-            onChange={(event) =>
-              setSettings((current) => ({
-                ...current,
-                dateFormat: event.target.value as DateFormat,
-              }))
-            }
-          >
-            <option value="M/D">M/D</option>
-            <option value="YYYY/MM/DD">YYYY/MM/DD</option>
-            <option value="M月D日">M月D日</option>
-            <option value="M/D(曜)">M/D(曜)</option>
-          </select>
-        </label>
+      {isSettingsOpen ? (
+        <div className="settings-dialog-backdrop" onClick={() => setIsSettingsOpen(false)}>
+          <div className="settings-dialog" onClick={(event) => event.stopPropagation()}>
+            <div className="settings-dialog-header">
+              <h2>週報テンプレート設定</h2>
+              <button
+                type="button"
+                className="dialog-close-button"
+                onClick={() => setIsSettingsOpen(false)}
+                aria-label="設定を閉じる"
+              >
+                ×
+              </button>
+            </div>
 
-        <label className="field">
-          <span>時刻の表示</span>
-          <select
-            value={settings.timeFormat}
-            onChange={(event) =>
-              setSettings((current) => ({
-                ...current,
-                timeFormat: event.target.value as TimeFormat,
-              }))
-            }
-          >
-            <option value="HH:mm">HH:mm</option>
-            <option value="H:mm">H:mm</option>
-            <option value="HH時mm分">HH時mm分</option>
-            <option value="H時mm分">H時mm分</option>
-          </select>
-        </label>
-
-        <label className="field">
-          <span>前の文</span>
-          <textarea
-            rows={2}
-            value={settings.intro}
-            onChange={(event) =>
-              setSettings((current) => ({
-                ...current,
-                intro: event.target.value,
-              }))
-            }
-          />
-        </label>
-
-        <label className="field">
-          <span>週報テンプレート</span>
-          <textarea
-            rows={3}
-            value={settings.template}
-            onChange={(event) =>
-              setSettings((current) => ({
-                ...current,
-                template: event.target.value,
-              }))
-            }
-          />
-        </label>
-
-        <label className="field">
-          <span>未入力時の文言</span>
-          <input
-            type="text"
-            value={settings.emptyText}
-            onChange={(event) =>
-              setSettings((current) => ({
-                ...current,
-                emptyText: event.target.value,
-              }))
-            }
-          />
-        </label>
-
-        <label className="field">
-          <span>後の文</span>
-          <textarea
-            rows={2}
-            value={settings.outro}
-            onChange={(event) =>
-              setSettings((current) => ({
-                ...current,
-                outro: event.target.value,
-              }))
-            }
-          />
-        </label>
-
-        <div className="day-settings">
-          {weekDays.map((date, index) => {
-            const dateString = formatDate(date);
-            const dayEmptyText = settings.perDateEmptyText?.[dateString] ?? settings.emptyText;
-            const [isOpen, setIsOpen] = useState(false);
-
-            return (
-              <div className="day-settings-item" key={dateString}>
-                <button
-                  type="button"
-                  className="accordion-trigger"
-                  onClick={() => setIsOpen((current) => !current)}
-                  aria-expanded={isOpen}
+            <div className="settings-dialog-body">
+              <label className="field">
+                <span>日付の表示</span>
+                <select
+                  value={settings.dateFormat}
+                  onChange={(event) =>
+                    setSettings((current) => ({
+                      ...current,
+                      dateFormat: event.target.value as DateFormat,
+                    }))
+                  }
                 >
-                  <span>{formatDisplayDate(date)}({dayNames[index]})</span>
-                  <span className="accordion-icon">{isOpen ? '−' : '+'}</span>
-                </button>
+                  <option value="M/D">M/D</option>
+                  <option value="YYYY/MM/DD">YYYY/MM/DD</option>
+                  <option value="M月D日">M月D日</option>
+                  <option value="M/D(曜)">M/D(曜)</option>
+                </select>
+              </label>
 
-                {isOpen ? (
-                  <div className="accordion-body">
-                    <label className="field field-compact">
-                      <span>この日の未入力時の文言</span>
-                      <input
-                        type="text"
-                        value={dayEmptyText}
-                        onChange={(event) =>
-                          setSettings((current) => ({
+              <label className="field">
+                <span>時刻の表示</span>
+                <select
+                  value={settings.timeFormat}
+                  onChange={(event) =>
+                    setSettings((current) => ({
+                      ...current,
+                      timeFormat: event.target.value as TimeFormat,
+                    }))
+                  }
+                >
+                  <option value="HH:mm">HH:mm</option>
+                  <option value="H:mm">H:mm</option>
+                  <option value="HH時mm分">HH時mm分</option>
+                  <option value="H時mm分">H時mm分</option>
+                </select>
+              </label>
+
+              <label className="field">
+                <span>前の文</span>
+                <textarea
+                  rows={2}
+                  value={settings.intro}
+                  onChange={(event) =>
+                    setSettings((current) => ({
+                      ...current,
+                      intro: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="field">
+                <span>週報テンプレート</span>
+                <textarea
+                  rows={3}
+                  value={settings.template}
+                  onChange={(event) =>
+                    setSettings((current) => ({
+                      ...current,
+                      template: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="field">
+                <span>未入力時の文言</span>
+                <input
+                  type="text"
+                  value={settings.emptyText}
+                  onChange={(event) =>
+                    setSettings((current) => ({
+                      ...current,
+                      emptyText: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <label className="field">
+                <span>後の文</span>
+                <textarea
+                  rows={2}
+                  value={settings.outro}
+                  onChange={(event) =>
+                    setSettings((current) => ({
+                      ...current,
+                      outro: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+
+              <div className="day-settings">
+                {weekDays.map((date, index) => {
+                  const dateString = formatDate(date);
+                  const dayEmptyText = settings.perDateEmptyText?.[dateString] ?? settings.emptyText;
+                  const isOpen = Boolean(openDayMap[dateString]);
+
+                  return (
+                    <div className="day-settings-item" key={dateString}>
+                      <button
+                        type="button"
+                        className="accordion-trigger"
+                        onClick={() =>
+                          setOpenDayMap((current) => ({
                             ...current,
-                            perDateEmptyText: {
-                              ...(current.perDateEmptyText ?? {}),
-                              [dateString]: event.target.value,
-                            },
+                            [dateString]: !current[dateString],
                           }))
                         }
-                      />
-                    </label>
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
+                        aria-expanded={isOpen}
+                      >
+                        <span>{formatDisplayDate(date)}({dayNames[index]})</span>
+                        <span className="accordion-icon">{isOpen ? '−' : '+'}</span>
+                      </button>
 
-        <p className="template-help">
-          使える埋め込み変数: {'{{date}}'}、{'{{day}}'}、{'{{time}}'}
-        </p>
-      </section>
+                      {isOpen ? (
+                        <div className="accordion-body">
+                          <label className="field field-compact">
+                            <span>この日の未入力時の文言</span>
+                            <input
+                              type="text"
+                              value={dayEmptyText}
+                              onChange={(event) =>
+                                setSettings((current) => ({
+                                  ...current,
+                                  perDateEmptyText: {
+                                    ...(current.perDateEmptyText ?? {}),
+                                    [dateString]: event.target.value,
+                                  },
+                                }))
+                              }
+                            />
+                          </label>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <p className="template-help">
+                使える埋め込み変数: {'{{date}}'}、{'{{day}}'}、{'{{time}}'}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <button
         className="primary-button"
