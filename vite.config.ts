@@ -15,8 +15,8 @@ export default defineConfig({
         theme_color: "#ffffff",
         background_color: "#ffffff",
         display: "standalone",
-        start_url: "/",
-        scope: '/',
+        start_url: "/weekly-report/",
+        scope: '/weekly-report/',
         icons: [
           {
             src: "/weekly-report/icon-192.png",
