@@ -17,7 +17,6 @@ type ReportSettings = {
   outro: string;
   template: string;
   emptyText: string;
-  shareTarget: string;
   perDateEmptyText?: Record<string, string>;
 };
 
@@ -25,7 +24,6 @@ const STORAGE_KEY = 'weekly-report-records';
 const STORAGE_KEY_SETTINGS = 'weekly-report-settings';
 const DEFAULT_START_TIME = '09:00';
 const DEFAULT_TEMPLATE = '{{date}}({{day}})：{{time}}';
-const DEFAULT_SHARE_TARGET = 'アプリ';
 
 function getMonday(date: Date): Date {
   const result = new Date(date);
@@ -91,7 +89,6 @@ function loadSettings(): ReportSettings {
       outro: '今週もありがとうございました。',
       template: DEFAULT_TEMPLATE,
       emptyText: '未設定',
-      shareTarget: DEFAULT_SHARE_TARGET,
       perDateEmptyText: {},
     };
   }
@@ -106,7 +103,6 @@ function loadSettings(): ReportSettings {
       outro: parsed.outro ?? '今週もありがとうございました。',
       template: parsed.template ?? DEFAULT_TEMPLATE,
       emptyText: parsed.emptyText ?? '未設定',
-      shareTarget: parsed.shareTarget ?? DEFAULT_SHARE_TARGET,
       perDateEmptyText: parsed.perDateEmptyText ?? {},
     };
   } catch {
@@ -117,7 +113,6 @@ function loadSettings(): ReportSettings {
       outro: '今週もありがとうございました。',
       template: DEFAULT_TEMPLATE,
       emptyText: '未設定',
-      shareTarget: DEFAULT_SHARE_TARGET,
       perDateEmptyText: {},
     };
   }
@@ -259,8 +254,8 @@ function App() {
     });
 
     const body = lines.join('\n');
-    const intro = settings.intro.trim();
-    const outro = settings.outro.trim();
+    const intro = settings.intro;
+    const outro = settings.outro;
 
     if (!intro && !outro) {
       return body;
@@ -269,41 +264,22 @@ function App() {
     return [intro, body, outro].filter(Boolean).join('\n');
   }
 
-  async function copyReport() {
-    const report = generateReport();
-    const textToCopy = settings.shareTarget
-      ? `${settings.shareTarget}\n\n${report}`
-      : report;
-
-    if (!navigator.clipboard || !navigator.clipboard.writeText) {
-      window.alert('この環境ではコピー機能が利用できません。');
-      return;
-    }
-
-    await navigator.clipboard.writeText(textToCopy);
-
-    window.alert('週報をコピーしました');
-  }
-
   async function shareReport() {
     const report = generateReport();
-    const textToShare = settings.shareTarget
-      ? `${settings.shareTarget}\n\n${report}`
-      : report;
 
     if (navigator.share) {
       try {
         await navigator.share({
           title: '週報',
-          text: textToShare,
+          text: report,
         });
         return;
       } catch {
-        // フォールバックとしてコピーを使う
+        // 共有がキャンセルされたときは何もしない
       }
     }
 
-    await copyReport();
+    window.alert('この環境では共有は利用できません。');
   }
 
   return (
@@ -462,20 +438,6 @@ function App() {
               </label>
 
               <label className="field">
-                <span>共有先（例: LINE / Slack / アプリ）</span>
-                <input
-                  type="text"
-                  value={settings.shareTarget}
-                  onChange={(event) =>
-                    setSettings((current) => ({
-                      ...current,
-                      shareTarget: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-
-              <label className="field">
                 <span>後の文</span>
                 <textarea
                   rows={2}
@@ -557,13 +519,6 @@ function App() {
         onClick={shareReport}
       >
         週報を共有
-      </button>
-
-      <button
-        className="secondary-button"
-        onClick={copyReport}
-      >
-        週報をコピー
       </button>
 
       <section className="card">
