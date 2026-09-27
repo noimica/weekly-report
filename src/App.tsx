@@ -15,6 +15,8 @@ type ReportSettings = {
   intro: string;
   outro: string;
   template: string;
+  emptyText: string;
+  perDateEmptyText?: Record<string, string>;
 };
 
 const STORAGE_KEY = 'weekly-report-records';
@@ -78,6 +80,8 @@ function loadSettings(): ReportSettings {
       intro: 'お疲れ様です。',
       outro: '今週もありがとうございました。',
       template: DEFAULT_TEMPLATE,
+      emptyText: '未設定',
+      perDateEmptyText: {},
     };
   }
 
@@ -90,6 +94,8 @@ function loadSettings(): ReportSettings {
       intro: parsed.intro ?? 'お疲れ様です。',
       outro: parsed.outro ?? '今週もありがとうございました。',
       template: parsed.template ?? DEFAULT_TEMPLATE,
+      emptyText: parsed.emptyText ?? '未設定',
+      perDateEmptyText: parsed.perDateEmptyText ?? {},
     };
   } catch {
     return {
@@ -98,6 +104,8 @@ function loadSettings(): ReportSettings {
       intro: 'お疲れ様です。',
       outro: '今週もありがとうございました。',
       template: DEFAULT_TEMPLATE,
+      emptyText: '未設定',
+      perDateEmptyText: {},
     };
   }
 }
@@ -211,10 +219,14 @@ function App() {
         (record) => record.date === dateString,
       );
 
+      const dateEmptyText = settings.perDateEmptyText?.[dateString] ?? settings.emptyText;
+
       const values = {
         date: formatDateForDisplay(date, settings.dateFormat, dayNames[index]),
         day: dayNames[index],
-        time: record ? formatTimeForDisplay(record.leavingTime, settings.timeFormat) : '未記録',
+        time: record
+          ? formatTimeForDisplay(record.leavingTime, settings.timeFormat)
+          : dateEmptyText,
       };
 
       return applyTemplate(settings.template, values);
@@ -345,6 +357,20 @@ function App() {
         </label>
 
         <label className="field">
+          <span>未入力時の文言</span>
+          <input
+            type="text"
+            value={settings.emptyText}
+            onChange={(event) =>
+              setSettings((current) => ({
+                ...current,
+                emptyText: event.target.value,
+              }))
+            }
+          />
+        </label>
+
+        <label className="field">
           <span>後の文</span>
           <textarea
             rows={2}
@@ -357,6 +383,49 @@ function App() {
             }
           />
         </label>
+
+        <div className="day-settings">
+          {weekDays.map((date, index) => {
+            const dateString = formatDate(date);
+            const dayEmptyText = settings.perDateEmptyText?.[dateString] ?? settings.emptyText;
+            const [isOpen, setIsOpen] = useState(false);
+
+            return (
+              <div className="day-settings-item" key={dateString}>
+                <button
+                  type="button"
+                  className="accordion-trigger"
+                  onClick={() => setIsOpen((current) => !current)}
+                  aria-expanded={isOpen}
+                >
+                  <span>{formatDisplayDate(date)}({dayNames[index]})</span>
+                  <span className="accordion-icon">{isOpen ? '−' : '+'}</span>
+                </button>
+
+                {isOpen ? (
+                  <div className="accordion-body">
+                    <label className="field field-compact">
+                      <span>この日の未入力時の文言</span>
+                      <input
+                        type="text"
+                        value={dayEmptyText}
+                        onChange={(event) =>
+                          setSettings((current) => ({
+                            ...current,
+                            perDateEmptyText: {
+                              ...(current.perDateEmptyText ?? {}),
+                              [dateString]: event.target.value,
+                            },
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
 
         <p className="template-help">
           使える埋め込み変数: {'{{date}}'}、{'{{day}}'}、{'{{time}}'}
