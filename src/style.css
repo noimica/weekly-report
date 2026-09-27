@@ -57,11 +57,6 @@ h2 {
   padding: 14px;
   background: #f3f3f3;
   text-align: left;
-  cursor: pointer;
-}
-
-.day-row:active {
-  background: #ddd;
 }
 
 .day {
@@ -72,10 +67,33 @@ h2 {
   color: #666;
 }
 
-.time {
-  font-size: 18px;
-  font-weight: bold;
-  text-align: right;
+.time-input-wrap {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.time-input {
+  width: 100%;
+  max-width: 120px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: white;
+  color: #222;
+  font: inherit;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .primary-button,

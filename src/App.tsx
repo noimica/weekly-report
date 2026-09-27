@@ -62,39 +62,11 @@ function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
   }, [records]);
 
-  function recordToday() {
-    const now = new Date();
-
-    const date = formatDate(now);
-    const leavingTime = now.toLocaleTimeString('ja-JP', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
-    setRecords((current) => {
-      const existing = current.find((record) => record.date === date);
-
-      if (existing) {
-        return current.map((record) =>
-          record.date === date
-            ? { ...record, leavingTime }
-            : record,
-        );
-      }
-
-      return [...current, { date, leavingTime }];
-    });
-  }
-
-  function editTime(date: string) {
-    const current = records.find((record) => record.date === date);
-
-    const leavingTime = window.prompt(
-      '退勤時間を入力してください',
-      current?.leavingTime ?? '18:00',
-    );
-
+  function saveLeavingTime(date: string, leavingTime: string) {
     if (!leavingTime) {
+      setRecords((currentRecords) =>
+        currentRecords.filter((record) => record.date !== date),
+      );
       return;
     }
 
@@ -113,6 +85,19 @@ function App() {
 
       return [...currentRecords, { date, leavingTime }];
     });
+  }
+
+  function recordToday() {
+    const now = new Date();
+
+    const date = formatDate(now);
+    const leavingTime = now.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+
+    saveLeavingTime(date, leavingTime);
   }
 
   function generateReport(): string {
@@ -148,29 +133,29 @@ function App() {
         <div className="records">
           {weekDays.map((date, index) => {
             const dateString = formatDate(date);
-
             const record = records.find(
               (record) => record.date === dateString,
             );
 
             return (
-              <button
-                className="day-row"
-                key={dateString}
-                onClick={() => editTime(dateString)}
-              >
-                <span className="day">
-                  {dayNames[index]}
-                </span>
+              <div className="day-row" key={dateString}>
+                <span className="day">{dayNames[index]}</span>
 
-                <span className="date">
-                  {formatDisplayDate(date)}
-                </span>
+                <span className="date">{formatDisplayDate(date)}</span>
 
-                <span className="time">
-                  {record?.leavingTime ?? '未記録'}
-                </span>
-              </button>
+                <label className="time-input-wrap">
+                  <span className="sr-only">退勤時間</span>
+                  <input
+                    aria-label="退勤時間"
+                    type="time"
+                    className="time-input"
+                    value={record?.leavingTime ?? ''}
+                    onChange={(event) =>
+                      saveLeavingTime(dateString, event.target.value)
+                    }
+                  />
+                </label>
+              </div>
             );
           })}
         </div>
