@@ -96,6 +96,40 @@ h2 {
   border: 0;
 }
 
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.field select,
+.field textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  background: white;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.template-help {
+  margin: 0;
+  color: #666;
+  font-size: 13px;
+}
+
 .primary-button,
 .secondary-button {
   width: 100%;

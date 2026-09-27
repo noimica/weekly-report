@@ -6,7 +6,20 @@ type WorkRecord = {
   leavingTime: string;
 };
 
+type DateFormat = 'M/D' | 'YYYY/MM/DD' | 'M月D日' | 'M/D(曜)';
+type TimeFormat = 'HH:mm' | 'H:mm' | 'HH時mm分' | 'H時mm分';
+
+type ReportSettings = {
+  dateFormat: DateFormat;
+  timeFormat: TimeFormat;
+  intro: string;
+  outro: string;
+  template: string;
+};
+
 const STORAGE_KEY = 'weekly-report-records';
+const STORAGE_KEY_SETTINGS = 'weekly-report-settings';
+const DEFAULT_TEMPLATE = '{{date}}({{day}})：{{time}}';
 
 function getMonday(date: Date): Date {
   const result = new Date(date);
@@ -55,12 +68,103 @@ function loadRecords(): WorkRecord[] {
   }
 }
 
+function loadSettings(): ReportSettings {
+  const value = localStorage.getItem(STORAGE_KEY_SETTINGS);
+
+  if (!value) {
+    return {
+      dateFormat: 'M/D(曜)',
+      timeFormat: 'HH:mm',
+      intro: 'お疲れ様です。',
+      outro: '今週もありがとうございました。',
+      template: DEFAULT_TEMPLATE,
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(value) as Partial<ReportSettings>;
+
+    return {
+      dateFormat: parsed.dateFormat ?? 'M/D(曜)',
+      timeFormat: parsed.timeFormat ?? 'HH:mm',
+      intro: parsed.intro ?? 'お疲れ様です。',
+      outro: parsed.outro ?? '今週もありがとうございました。',
+      template: parsed.template ?? DEFAULT_TEMPLATE,
+    };
+  } catch {
+    return {
+      dateFormat: 'M/D(曜)',
+      timeFormat: 'HH:mm',
+      intro: 'お疲れ様です。',
+      outro: '今週もありがとうございました。',
+      template: DEFAULT_TEMPLATE,
+    };
+  }
+}
+
+function formatDateForDisplay(
+  date: Date,
+  dateFormat: DateFormat,
+  dayLabel: string,
+): string {
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const year = date.getFullYear();
+
+  switch (dateFormat) {
+    case 'M/D':
+      return `${month}/${day}`;
+    case 'YYYY/MM/DD':
+      return `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`;
+    case 'M月D日':
+      return `${month}月${day}日`;
+    case 'M/D(曜)':
+      return `${month}/${day}(${dayLabel})`;
+    default:
+      return `${month}/${day}`;
+  }
+}
+
+function formatTimeForDisplay(time: string, timeFormat: TimeFormat): string {
+  if (!time) {
+    return '未記録';
+  }
+
+  const [hourText, minuteText] = time.split(':');
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+
+  switch (timeFormat) {
+    case 'HH:mm':
+      return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    case 'H:mm':
+      return `${hour}:${String(minute).padStart(2, '0')}`;
+    case 'HH時mm分':
+      return `${String(hour).padStart(2, '0')}時${String(minute).padStart(2, '0')}分`;
+    case 'H時mm分':
+      return `${hour}時${String(minute).padStart(2, '0')}分`;
+    default:
+      return time;
+  }
+}
+
+function applyTemplate(template: string, values: Record<string, string>): string {
+  return template.replace(/\{\{\s*(date|day|time)\s*\}\}/g, (_, key: string) => {
+    return values[key] ?? '';
+  });
+}
+
 function App() {
   const [records, setRecords] = useState<WorkRecord[]>(loadRecords);
+  const [settings, setSettings] = useState<ReportSettings>(loadSettings);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
   }, [records]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(settings));
+  }, [settings]);
 
   function saveLeavingTime(date: string, leavingTime: string) {
     if (!leavingTime) {
@@ -101,18 +205,30 @@ function App() {
   }
 
   function generateReport(): string {
-    return weekDays
-      .map((date, index) => {
-        const dateString = formatDate(date);
-        const record = records.find(
-          (record) => record.date === dateString,
-        );
+    const lines = weekDays.map((date, index) => {
+      const dateString = formatDate(date);
+      const record = records.find(
+        (record) => record.date === dateString,
+      );
 
-        return `${formatDisplayDate(date)}(${dayNames[index]})：${
-          record?.leavingTime ?? '未記録'
-        }`;
-      })
-      .join('\n');
+      const values = {
+        date: formatDateForDisplay(date, settings.dateFormat, dayNames[index]),
+        day: dayNames[index],
+        time: record ? formatTimeForDisplay(record.leavingTime, settings.timeFormat) : '未記録',
+      };
+
+      return applyTemplate(settings.template, values);
+    });
+
+    const body = lines.join('\n');
+    const intro = settings.intro.trim();
+    const outro = settings.outro.trim();
+
+    if (!intro && !outro) {
+      return body;
+    }
+
+    return [intro, body, outro].filter(Boolean).join('\n\n');
   }
 
   async function copyReport() {
@@ -159,6 +275,92 @@ function App() {
             );
           })}
         </div>
+      </section>
+
+      <section className="card settings-card">
+        <h2>週報テンプレート設定</h2>
+
+        <label className="field">
+          <span>日付の表示</span>
+          <select
+            value={settings.dateFormat}
+            onChange={(event) =>
+              setSettings((current) => ({
+                ...current,
+                dateFormat: event.target.value as DateFormat,
+              }))
+            }
+          >
+            <option value="M/D">M/D</option>
+            <option value="YYYY/MM/DD">YYYY/MM/DD</option>
+            <option value="M月D日">M月D日</option>
+            <option value="M/D(曜)">M/D(曜)</option>
+          </select>
+        </label>
+
+        <label className="field">
+          <span>時刻の表示</span>
+          <select
+            value={settings.timeFormat}
+            onChange={(event) =>
+              setSettings((current) => ({
+                ...current,
+                timeFormat: event.target.value as TimeFormat,
+              }))
+            }
+          >
+            <option value="HH:mm">HH:mm</option>
+            <option value="H:mm">H:mm</option>
+            <option value="HH時mm分">HH時mm分</option>
+            <option value="H時mm分">H時mm分</option>
+          </select>
+        </label>
+
+        <label className="field">
+          <span>前の文</span>
+          <textarea
+            rows={2}
+            value={settings.intro}
+            onChange={(event) =>
+              setSettings((current) => ({
+                ...current,
+                intro: event.target.value,
+              }))
+            }
+          />
+        </label>
+
+        <label className="field">
+          <span>週報テンプレート</span>
+          <textarea
+            rows={3}
+            value={settings.template}
+            onChange={(event) =>
+              setSettings((current) => ({
+                ...current,
+                template: event.target.value,
+              }))
+            }
+          />
+        </label>
+
+        <label className="field">
+          <span>後の文</span>
+          <textarea
+            rows={2}
+            value={settings.outro}
+            onChange={(event) =>
+              setSettings((current) => ({
+                ...current,
+                outro: event.target.value,
+              }))
+            }
+          />
+        </label>
+
+        <p className="template-help">
+          使える埋め込み変数: {'{{date}}'}、{'{{day}}'}、{'{{time}}'}
+        </p>
       </section>
 
       <button
