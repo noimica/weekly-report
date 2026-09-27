@@ -242,7 +242,7 @@ function App() {
       return body;
     }
 
-    return [intro, body, outro].filter(Boolean).join('\n\n');
+    return [intro, body, outro].filter(Boolean).join('\n');
   }
 
   async function copyReport() {
