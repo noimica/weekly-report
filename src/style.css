@@ -1,0 +1,111 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  background: #f5f5f5;
+  color: #222;
+}
+
+button {
+  font: inherit;
+}
+
+.container {
+  width: min(100% - 32px, 480px);
+  margin: 0 auto;
+  padding: 24px 0 48px;
+}
+
+h1 {
+  margin: 0 0 24px;
+  font-size: 28px;
+}
+
+h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.records {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.day-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 32px 70px 1fr;
+  align-items: center;
+  border: 0;
+  border-radius: 8px;
+  padding: 14px;
+  background: #f3f3f3;
+  text-align: left;
+  cursor: pointer;
+}
+
+.day-row:active {
+  background: #ddd;
+}
+
+.day {
+  font-weight: bold;
+}
+
+.date {
+  color: #666;
+}
+
+.time {
+  font-size: 18px;
+  font-weight: bold;
+  text-align: right;
+}
+
+.primary-button,
+.secondary-button {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.primary-button {
+  background: #222;
+  color: white;
+}
+
+.secondary-button {
+  background: white;
+  border: 1px solid #ccc;
+}
+
+.primary-button:active,
+.secondary-button:active {
+  opacity: 0.7;
+}
+
+pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+  line-height: 1.8;
+}
