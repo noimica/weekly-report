@@ -31,6 +31,7 @@ export default defineConfig({
       },
     }),
   ],
+  base: '/weekly-report/',
   server: {
     host: true,
     watch: {
